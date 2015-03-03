@@ -77,9 +77,9 @@ class MbtaApi(object):
 
     def _api_call(self, **kwargs):
         function = kwargs.pop("function", None)
-        if not function:
+        if function is None:
             raise TypeError("Required kwarg `function` not provided")
-        if not "api_key" in kwargs:
+        if "api_key" not in kwargs:
             kwargs["api_key"] = self.api_key
         r = requests.get(self.api_url+function, params=kwargs)
         return r.json()
