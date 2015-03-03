@@ -39,7 +39,7 @@ class Trip(object):
     def __init__(self, trip_id, trip_name):
         self.trip_id = trip_id
         self.trip_name = trip_name
-        self.stops = []
+        self.stops = {}
 
     def __repr__(self):
         return self.trip_id
@@ -71,45 +71,49 @@ class MbtaApi(object):
     api_url = 'http://realtime.mbta.com/developer/api/v2/'
     response_format = 'json'
 
-    def __init__(self, api_key=None, response_format=None):
+    def __init__(self, api_key=None):
         if api_key:
             self.api_key = api_key
-        if response_format:
-            self.response_format = response_format
+
+    def _api_call(self, **kwargs):
+        function = kwargs.pop("function", None)
+        if not function:
+            raise TypeError("Required kwarg `function` not provided")
+        if not "api_key" in kwargs:
+            kwargs["api_key"] = self.api_key
+        r = requests.get(self.api_url+function, params=kwargs)
+        return r.json()
 
     def _api_routes(self):
-        function = 'routes'
-        params = {'api_key': self.api_key, 'format': self.response_format}
-        r = requests.get(self.api_url+function, params=params)
-        return r.json()
+        return self._api_call(function="routes")
 
-    def _api_stopsbyroute(self, route_id):
-        function = 'stopsbyroute'
-        params = {'api_key': self.api_key, 'format': self.response_format, 'route': route_id}
-        r = requests.get(self.api_url+function, params=params)
-        return r.json()
+    def _api_stopsbyroute(self, route):
+        return self._api_call(function="stopsbyroute", route=route)
 
-    def _api_schedulebyroute(self, route_id):
-        function = "schedulebyroute"
-        params = {'api_key': self.api_key, 'format': self.response_format, 'route': route_id}
-        r = requests.get(self.api_url+function, params=params)
-        return r.json()
+    def _api_schedulebyroute(self, route):
+        return self._api_call(function="schedulebyroute", route=route)
 
-    def get_commuter_rail_routes(self):
+    def _api_predictionsbyroute(self, route):
+        return self._api_call(function="predictionsbyroute", route=route)
+
+    def get_routes_by_mode(self, mode_name):
         """
         Returns a list of routes on the Commuter Rail
+
+        TODO: This function needs to be redesigned. Firstly, mode names are not unique (e.g, "Subway" is used more than
+         once.
         """
         result = []
         routes_json = self._api_routes()
         modes = routes_json['mode']
-        cr_mode = None
-        for mode in modes:
-            if mode["mode_name"] == "Commuter Rail":
-                cr_mode = mode
+        mode = None
+        for m in modes:
+            if m["mode_name"] == mode_name:
+                mode = m
                 break
-        if not cr_mode:
+        if not mode:
             return None
-        routes = cr_mode["route"]
+        routes = mode["route"]
         for route in routes:
             result.append(Route(route['route_id'], route['route_name'], "route_hide" in route))
         return result
@@ -148,6 +152,6 @@ class MbtaApi(object):
                 for tripstop in trip["stop"]:
                     tripstop_obj = TripStop(tripstop["stop_sequence"], tripstop["stop_id"], tripstop["stop_name"],
                                             tripstop["sch_arr_dt"], tripstop["sch_dep_dt"])
-                    trip_obj.stops.append(tripstop_obj)
+                    trip_obj.stops[tripstop_obj.stop_id] = tripstop_obj
                 result[direction_obj].append(trip_obj)
         return result
