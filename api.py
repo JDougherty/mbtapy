@@ -1,11 +1,5 @@
 import requests
 
-api_url = 'http://realtime.mbta.com/developer/api/v2/'
-
-# This API key is open to all developers for use in development. It may change at any time; if it does check
-# http://realtime.mbta.com/Portal/Content/Download/APIKey.txt for a new one. Do not go into production using the open
-# development key!
-
 
 class Route(object):
     def __init__(self, route_id, route_name, route_hide=False):
@@ -16,20 +10,54 @@ class Route(object):
     def __repr__(self):
         return self.route_id
 
+
+class Direction(object):
+    def __init__(self, direction_id, direction_name):
+        self.direction_id = direction_id
+        self.direction_name = direction_name
+
+    def __repr__(self):
+        return self.direction_id
+
+class Stop(object):
+    def __init__(self, stop_order, stop_id, stop_name, parent_station, parent_station_name, stop_lat, stop_lon):
+        self.stop_order = stop_order
+        self.stop_id = stop_id
+        self.stop_name = stop_name
+        self.parent_station = parent_station
+        self.parent_station_name = parent_station_name
+        self.stop_lat = stop_lat
+        self.stop_lon = stop_lon
+
+    def __repr__(self):
+        return self.stop_id
+
 class MbtaApi(object):
     # This API key is open to all developers for use in development. It may change at any time; if it does check
     # http://realtime.mbta.com/Portal/Content/Download/APIKey.txt for a new one. Do not go into production using the
     # open development key!
     api_key = 'wX9NwuHnZU2ToO7GmGR9uw'
+    api_url = 'http://realtime.mbta.com/developer/api/v2/'
+    response_format = 'json'
 
-    def __init__(self, api_key=None):
+    def __init__(self, api_key=None, response_format=None):
         if api_key:
             self.api_key = api_key
+        if response_format:
+            self.response_format = response_format
 
-    def _api_routes(self,format='json'):
+
+    def _api_routes(self):
         function = 'routes'
-        params = {'api_key': self.api_key, 'format': format}
-        r = requests.get(api_url+function, params=params)
+        params = {'api_key': self.api_key, 'format': self.response_format}
+        r = requests.get(self.api_url+function, params=params)
+        return r.json()
+
+    def _api_stopsbyroute(self, route_id):
+        function = 'stopsbyroute'
+        params = {'api_key': self.api_key, 'format': self.response_format}
+        params['route'] = route_id
+        r = requests.get(self.api_url+function, params=params)
         return r.json()
 
     def get_commuter_rail_routes(self):
@@ -51,7 +79,25 @@ class MbtaApi(object):
             result.append(Route(route['route_id'],
                                 route['route_name'],
                                 "route_hide" in route)
-                                )
+            )
         return result
 
-
+    def get_stops_by_route(self, route):
+        """
+        Returns a dictionary keyed by Direction objects for a given Route. The values are lists of Stop objects for
+        each Direction.
+        """
+        result = {}
+        stops_json = self._api_stopsbyroute(route.route_id)
+        directions = stops_json['direction']
+        for direction in directions:
+            direction_obj = Direction(direction['direction_id'], direction['direction_name'])
+            print direction_obj.direction_id, direction_obj.direction_name
+            result[direction_obj] = []
+            stops = direction["stop"]
+            for stop in stops:
+                stop_obj = Stop(stop["stop_order"], stop["stop_id"], stop["stop_name"], stop["parent_station"],
+                                stop["parent_station_name"], stop["stop_lat"], stop["stop_lon"])
+                print stop_obj
+                result[direction_obj].append(stop_obj)
+        return result
