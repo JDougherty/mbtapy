@@ -76,8 +76,8 @@ class MbtaApi(object):
             self.api_key = api_key
 
     def _api_call(self, **kwargs):
-        function = kwargs.pop("function", None)
-        if function is None:
+        function = kwargs.pop("function", "")
+        if function == "":
             raise TypeError("Required kwarg `function` not provided")
         if "api_key" not in kwargs:
             kwargs["api_key"] = self.api_key
@@ -87,18 +87,50 @@ class MbtaApi(object):
     def _api_routes(self):
         return self._api_call(function="routes")
 
+    def _api_routesbystop(self, stop):
+        return self._api_call(function="routesbystop", stop=stop)
+
     def _api_stopsbyroute(self, route):
         return self._api_call(function="stopsbyroute", route=route)
 
+    def _api_stopsbylocation(self, lat, lon):
+        return self._api_call(function="stopsbylocation", lat=lat, lon=lon)
+
+    # TODO: Add support for optional parameters
+    def _api_schedulebystop(self, stop):
+        return self._api_call(function="schedulebystop", stop=stop)
+
+    # TODO: Add support for optional parameters
     def _api_schedulebyroute(self, route):
         return self._api_call(function="schedulebyroute", route=route)
 
-    def _api_predictionsbyroute(self, route):
-        return self._api_call(function="predictionsbyroute", route=route)
+    # TODO: Add support for optional parameters
+    def _api_schedulebytrip(self, trip):
+        return self._api_call(function="schedulebytrip", trip=trip)
+
+    def _api_predictionsbystop(self, stop, include_access_alerts=False, include_service_alerts=True):
+        return self._api_call(function="predictionsbystop", stop=stop, include_access_alerts=include_access_alerts,
+                              include_service_alerts=include_service_alerts)
+
+    def _api_predictionsbyroute(self, route, include_access_alerts=False, include_service_alerts=True):
+        return self._api_call(function="predictionsbyroute", route=route, include_access_alerts=include_access_alerts,
+                              include_service_alerts=include_service_alerts)
+
+    def _api_vehiclesbyroute(self, route):
+        return self._api_call(function="vehiclesbyroute", route=route)
+
+    def _api_predictionsbytrip(self, trip):
+        return self._api_call(function="predictionsbytrip", trip=trip)
+
+    def _api_vehiclesbytrip(self, trip):
+        return self._api_call(function="vehiclesbytrip", trip=trip)
+
+    def _api_alerts(self):
+        return self._api_call(function="alerts")
 
     def get_routes_by_mode(self, mode_name):
         """
-        Returns a list of routes on the Commuter Rail
+        Returns a list of routes for a given mode
 
         TODO: This function needs to be redesigned. Firstly, mode names are not unique (e.g, "Subway" is used more than
          once.
