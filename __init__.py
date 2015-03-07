@@ -1,5 +1,6 @@
 import requests
 import datetime
+from collections import OrderedDict
 
 
 class Route(object):
@@ -39,7 +40,7 @@ class Trip(object):
     def __init__(self, trip_id, trip_name):
         self.trip_id = trip_id
         self.trip_name = trip_name
-        self.stops = {}
+        self.stops = OrderedDict()
 
     def __repr__(self):
         return self.trip_id
