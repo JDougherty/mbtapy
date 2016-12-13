@@ -171,11 +171,30 @@ class MbtaApi(object):
 
     def get_schedule_by_route(self, route):
         """
-        Returns a dictionary keyed by Direction objects for a given Route. The values are lists of Trip objects for
+        Gets the schedules for a given Route instance.
+
+        Args:
+        route (Route): A route instance to get schedules for
+
+        Returns:
+        Dictionary keyed by Direction objects for a given Route. The values are lists of Trip objects for
+        each Direction.
+        """
+        return self.get_schedule_by_route_id(route.route_id)
+
+    def get_schedule_by_route_id(self, route_id):
+        """
+        Gets the schedules for a given route identifier
+
+        Args:
+        route_id (int): The identifier of the route for which to get schedules
+
+        Returns:
+        Dictionary keyed by Direction objects for a given Route. The values are lists of Trip objects for
         each Direction.
         """
         result = {}
-        schedules_json = self._api_schedulebyroute(route.route_id)
+        schedules_json = self._api_schedulebyroute(route_id)
         directions = schedules_json['direction']
         for direction in directions:
             direction_obj = Direction(direction['direction_id'], direction['direction_name'])
